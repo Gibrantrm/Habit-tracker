@@ -1,0 +1,6 @@
+{
+  "name": "Habit Tracker",
+  "description": "Una aplicación web responsiva (estilo móvil) para registrar y hacer seguimiento de hábitos diarios.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

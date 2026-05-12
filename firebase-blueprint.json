@@ -1,0 +1,30 @@
+{
+  "entities": {
+    "Habit": {
+      "title": "Habit",
+      "description": "A daily habit being tracked by a user.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the habit (e.g., 'Drink Water')."
+        },
+        "completedDates": {
+          "type": "array",
+          "description": "List of dates when the habit was completed in YYYY-MM-DD format."
+        },
+        "createdAt": {
+          "type": "number",
+          "description": "Timestamp when the habit was created."
+        }
+      },
+      "required": ["name", "completedDates", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/habits/{habitId}": {
+      "schema": "Habit",
+      "description": "User-specific habits subcollection."
+    }
+  }
+}
