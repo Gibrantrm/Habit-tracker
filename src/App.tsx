@@ -90,9 +90,22 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'today' | 'stats'>('today');
 
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (u) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (u) => {
       setUser(u);
       setLoading(false);
+      if (u) {
+        // Materializar el documento del usuario para que sea visible en la consola
+        const userRef = doc(db, 'users', u.uid);
+        try {
+          await setDoc(userRef, {
+            displayName: u.displayName,
+            email: u.email,
+            lastSeen: Date.now()
+          }, { merge: true });
+        } catch (e) {
+          console.error("Error syncing profile:", e);
+        }
+      }
     });
     return () => unsubscribeAuth();
   }, []);

@@ -36,22 +36,26 @@ service cloud.firestore {
         && data.createdAt is number;
     }
 
-    match /users/{userId}/habits/{habitId} {
-      allow get, list: if isOwner(userId);
+    match /users/{userId} {
+      allow get, write: if isOwner(userId);
       
-      allow create: if isOwner(userId) 
-        && isValidId(habitId)
-        && isValidHabit(incoming());
+      match /habits/{habitId} {
+        allow get, list: if isOwner(userId);
+        
+        allow create: if isOwner(userId) 
+          && isValidId(habitId)
+          && isValidHabit(incoming());
 
-      allow update: if isOwner(userId)
-        && isValidHabit(incoming())
-        && incoming().createdAt == existing().createdAt // Immutable field
-        && (
-          // Action: Toggle completion or Rename
-          incoming().diff(existing()).affectedKeys().hasOnly(['completedDates', 'name'])
-        );
+        allow update: if isOwner(userId)
+          && isValidHabit(incoming())
+          && incoming().createdAt == existing().createdAt // Immutable field
+          && (
+            // Action: Toggle completion or Rename
+            incoming().diff(existing()).affectedKeys().hasOnly(['completedDates', 'name'])
+          );
 
-      allow delete: if isOwner(userId);
+        allow delete: if isOwner(userId);
+      }
     }
   }
 }

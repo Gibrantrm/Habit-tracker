@@ -1,5 +1,16 @@
 {
   "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile metadata.",
+      "type": "object",
+      "properties": {
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "lastSeen": { "type": "number" }
+      },
+      "required": ["displayName", "email", "lastSeen"]
+    },
     "Habit": {
       "title": "Habit",
       "description": "A daily habit being tracked by a user.",
