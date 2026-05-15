@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Check, Plus, Calendar, Trophy, ChevronLeft, ChevronRight, Settings, LogOut, Github, User } from 'lucide-react';
+import { Check, Plus, Calendar, Trophy, ChevronLeft, ChevronRight, LogOut, Github, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { auth, db, loginWithGoogle, logout } from './lib/firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
@@ -12,7 +12,6 @@ import {
   deleteDoc, 
   doc, 
   setDoc,
-  serverTimestamp,
   orderBy
 } from 'firebase/firestore';
 
@@ -60,7 +59,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
     path
   }
   console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
+  return errInfo;
 }
 
 interface Habit {
@@ -68,7 +67,19 @@ interface Habit {
   name: string;
   completedDates: string[]; // "YYYY-MM-DD" formatted
   createdAt: number;
+  color?: string;
 }
+
+const DEFAULT_HABIT_COLOR = 'indigo';
+const HABIT_COLOR_OPTIONS = ['indigo', 'emerald', 'rose', 'amber', 'sky'] as const;
+
+const COLOR_DOT_CLASSES: Record<string, string> = {
+  indigo: 'bg-indigo-500',
+  emerald: 'bg-emerald-500',
+  rose: 'bg-rose-500',
+  amber: 'bg-amber-500',
+  sky: 'bg-sky-500',
+};
 
 const getTodayString = () => {
   const d = new Date();
@@ -87,6 +98,7 @@ export default function App() {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [isAddingMode, setIsAddingMode] = useState(false);
   const [newHabitName, setNewHabitName] = useState('');
+  const [newHabitColor, setNewHabitColor] = useState<(typeof HABIT_COLOR_OPTIONS)[number]>(DEFAULT_HABIT_COLOR);
   const [activeTab, setActiveTab] = useState<'today' | 'stats'>('today');
 
   useEffect(() => {
@@ -155,7 +167,7 @@ export default function App() {
     }
   };
 
-  const addHabit = async (e: React.FormEvent) => {
+  const addHabit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!newHabitName.trim() || !user) return;
     
@@ -163,15 +175,18 @@ export default function App() {
     const newHabit = {
       name: newHabitName.trim(),
       completedDates: [],
-      createdAt: Date.now()
+      createdAt: Date.now(),
+      color: newHabitColor
     };
 
     try {
       await addDoc(collection(db, path), newHabit);
       setNewHabitName('');
+      setNewHabitColor(DEFAULT_HABIT_COLOR);
       setIsAddingMode(false);
     } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, path);
+      const errInfo = handleFirestoreError(error, OperationType.CREATE, path);
+      alert(`No se pudo guardar el habito. Revisa consola para detalles.\n\n${errInfo.error}`);
     }
   };
 
@@ -301,6 +316,7 @@ export default function App() {
                 <div className="space-y-4">
                   {habits.map(habit => {
                     const isCompleted = habit.completedDates.includes(dateString);
+                    const colorClass = COLOR_DOT_CLASSES[habit.color || DEFAULT_HABIT_COLOR] || COLOR_DOT_CLASSES[DEFAULT_HABIT_COLOR];
                     return (
                       <motion.div 
                         layout
@@ -314,6 +330,7 @@ export default function App() {
                         onClick={() => toggleHabit(habit.id)}
                       >
                         <div className="flex items-center gap-4">
+                          <span className={`w-2.5 h-2.5 rounded-full ${colorClass}`} title={`Color: ${habit.color || DEFAULT_HABIT_COLOR}`} />
                           <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors ${
                             isCompleted ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-slate-300 text-transparent'
                           }`}>
@@ -403,6 +420,24 @@ export default function App() {
                     autoFocus
                     className="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl px-5 py-4 text-slate-800 font-medium focus:outline-none focus:border-indigo-500 focus:bg-white transition-colors mb-6"
                   />
+                  <div className="mb-6">
+                    <p className="text-sm font-semibold text-slate-700 mb-3">Color</p>
+                    <div className="flex gap-3">
+                      {HABIT_COLOR_OPTIONS.map((color) => {
+                        const isSelected = newHabitColor === color;
+                        return (
+                          <button
+                            key={color}
+                            type="button"
+                            onClick={() => setNewHabitColor(color)}
+                            className={`w-9 h-9 rounded-full border-2 transition ${COLOR_DOT_CLASSES[color]} ${isSelected ? 'border-slate-900 scale-110' : 'border-white'}`}
+                            aria-label={`Seleccionar color ${color}`}
+                            title={color}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
                   <button 
                     type="submit" 
                     disabled={!newHabitName.trim()}

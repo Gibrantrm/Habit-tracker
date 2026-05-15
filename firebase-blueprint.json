@@ -27,6 +27,10 @@
         "createdAt": {
           "type": "number",
           "description": "Timestamp when the habit was created."
+        },
+        "color": {
+          "type": "string",
+          "description": "Optional visual tag color for the habit."
         }
       },
       "required": ["name", "completedDates", "createdAt"]

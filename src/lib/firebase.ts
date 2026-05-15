@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -20,16 +20,20 @@ export const logout = () => auth.signOut();
 
 // CRITICAL: Validate connection to Firestore on boot
 async function testConnection() {
-  try {
-    // Attempting to read a non-existent doc just to check connectivity
-    await getDocFromServer(doc(db, '_connection_test_', 'check'));
-    console.log("Firebase connection successful.");
-  } catch (error) {
-    if(error instanceof Error && error.message.includes('the client is offline')) {
-      console.error("Please check your Firebase configuration. Client is offline.");
-    } else {
-      console.error("Firebase connection error:", error);
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) return;
+
+    try {
+      // Probe a document path that is allowed by current rules for signed-in users.
+      await getDocFromServer(doc(db, 'users', user.uid));
+      console.log('Firebase connection successful.');
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('the client is offline')) {
+        console.error('Please check your Firebase configuration. Client is offline.');
+      } else {
+        console.error('Firebase connection error:', error);
+      }
     }
-  }
+  });
 }
 testConnection();

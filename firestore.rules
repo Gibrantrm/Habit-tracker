@@ -27,13 +27,19 @@ service cloud.firestore {
       return resource.data;
     }
 
+    function hasOptionalValidColor(data) {
+      return !data.keys().hasAny(['color'])
+        || (data.color is string && data.color.size() >= 1 && data.color.size() <= 30);
+    }
+
     // Habit Validation Helper
     function isValidHabit(data) {
       return data.keys().hasAll(['name', 'completedDates', 'createdAt']) 
-        && data.keys().size() == 3
+        && data.keys().hasOnly(['name', 'completedDates', 'createdAt', 'color'])
         && data.name is string && data.name.size() >= 1 && data.name.size() <= 100
         && data.completedDates is list && data.completedDates.size() <= 1000
-        && data.createdAt is number;
+        && data.createdAt is number
+        && hasOptionalValidColor(data);
     }
 
     match /users/{userId} {
@@ -51,7 +57,7 @@ service cloud.firestore {
           && incoming().createdAt == existing().createdAt // Immutable field
           && (
             // Action: Toggle completion or Rename
-            incoming().diff(existing()).affectedKeys().hasOnly(['completedDates', 'name'])
+            incoming().diff(existing()).affectedKeys().hasOnly(['completedDates', 'name', 'color'])
           );
 
         allow delete: if isOwner(userId);
